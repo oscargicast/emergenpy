@@ -1,5 +1,6 @@
 import urllib2
 import socket
+import re
 from urllib2 import URLError, HTTPError
 from lxml import html
 from lxml import etree
@@ -34,9 +35,16 @@ emergency = []
 for event in events:
     item = etree.tostring(event, pretty_print=True)
     elem = event.xpath('.//div/text()')
-    state = event.xpath('.//div/font/text()')
+    coordinates = event.xpath('.//img/@onclick')
     if elem:
-        elem.append(state[0])
+        if coordinates:
+            cc = re.findall("'([^']*)'", coordinates[0])
+            lat = cc[0]
+            lon = cc[1]
+            state = cc[5]
+            elem.append(state)
+            elem.append(lat)
+            elem.append(lon)
         for index, item in enumerate(elem):
             elem[index] = ' '.join(
                 elem[index].replace(u'\xa0', '').strip().split()
@@ -48,4 +56,6 @@ print len(emergency)
 
 print response.info().get('date')
 print response.info().get('content-length')
+
+print '-' * 30
 print 'finish operation'
