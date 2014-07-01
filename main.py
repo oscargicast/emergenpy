@@ -1,6 +1,7 @@
 import urllib2
 import socket
 import re
+import json
 from urllib2 import URLError, HTTPError
 from lxml import html
 from lxml import etree
@@ -31,7 +32,7 @@ tree = html.fromstring(response.read())
 events = tree.xpath('//tr[@class="TextoContenido"]')
 print len(events)
 
-emergency = []
+emergency = {}
 for event in events:
     item = etree.tostring(event, pretty_print=True)
     elem = event.xpath('.//div/text()')
@@ -40,6 +41,8 @@ for event in events:
     if elem:
         if state:
             elem.append(state[0])
+        lat = None
+        lng = None
         if coordinates:
             cc = re.findall("'([^']*)'", coordinates[0])
             lng = cc[0]
@@ -48,16 +51,30 @@ for event in events:
             elem.append(lng)
         for index, item in enumerate(elem):
             elem[index] = ' '.join(
-                elem[index].replace(u'\xa0', '').strip().split()
+                item.replace(u'\xa0', '').strip().split()
             )
-        emergency.append(elem)
+        emergency[elem[1]] = {
+            'order': elem[0],
+            'datetime': elem[2],
+            'address': elem[3],
+            'district': elem[3],
+            'event_type': elem[4],
+            'status': elem[6],
+            'unit': elem[5],
+            'lat': lat,
+            'lng': lng,
+        }
 
-print emergency
-print len(emergency)
+result = json.dumps(emergency)
+with open("result.json", "w") as f:
+    f.write(result)
+
+print '-' * 30
+print 'response info ...'
 
 print response.info().get('date')
 print response.info().get('content-length')
 print response.info()
 
 print '-' * 30
-print 'finish operation'
+print 'operation completed!'
